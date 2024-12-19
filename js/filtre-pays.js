@@ -7,6 +7,11 @@ document.addEventListener("DOMContentLoaded", () => {
   buttons.forEach((button) => {
     button.addEventListener("click", async (event) => {
       event.preventDefault();
+
+      // Indique quel bouton est actif
+      buttons.forEach((btn) => btn.classList.remove("active"));
+      button.classList.add("active");
+
       const pays = button.dataset.pays;
       console.log(`Pays sélectionné : ${pays}`);
 
@@ -17,6 +22,8 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!response.ok) {
           throw new Error(`Erreur HTTP : ${response.status}`);
         }
+
+
         const destinations = await response.json();
         console.log("Destinations reçues :", destinations);
 
