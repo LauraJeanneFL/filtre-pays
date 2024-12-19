@@ -1,54 +1,78 @@
 document.addEventListener("DOMContentLoaded", () => {
-  const buttons = document.querySelectorAll(".pays-button");
-  const container = document.querySelector("#resultats");
+  const resultats = document.querySelector("#resultats");
 
-  console.log("Boutons trouvés :", buttons);
+  // Fonction pour charger les destinations via l'API REST
+  async function chargerDestinations(pays) {
+    try {
+      // Remplacez par l'URL complète de votre API
+      const response = await fetch(
+        `https://gftnth00.mywhc.ca/31w13/wp-json/wp/v2/posts?search=${pays}&per_page=30`
+      );
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", async (event) => {
-      event.preventDefault();
-
-      // Indique quel bouton est actif
-      buttons.forEach((btn) => btn.classList.remove("active"));
-      button.classList.add("active");
-
-      const pays = button.dataset.pays;
-      console.log(`Pays sélectionné : ${pays}`);
-
-      try {
-        const response = await fetch(
-          `/31w13/wp-json/filtre-pays/v1/destinations?pays=${pays}`
-        );
-        if (!response.ok) {
-          throw new Error(`Erreur HTTP : ${response.status}`);
-        }
-
-
-        const destinations = await response.json();
-        console.log("Destinations reçues :", destinations);
-
-        // Gère les cas où aucune destination n'est trouvée
-        if (destinations.length === 0) {
-          container.innerHTML =
-            "<p>Aucune destination trouvée pour ce pays.</p>";
-          return;
-        }
-
-        // Affiche les destinations
-        container.innerHTML = destinations
-          .map(
-            (destination) => `
-              <article>
-                <h5><a href="${destination.link}">${destination.title}</a></h5>
-              </article>
-            `
-          )
-          .join("");
-      } catch (error) {
-        console.error("Erreur lors de la requête :", error);
-        container.innerHTML =
-          "<p>Une erreur est survenue lors de la récupération des données.</p>";
+      // Vérifie si la réponse est valide
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
       }
+
+      const destinations = await response.json();
+
+      // Insérer les résultats dans le conteneur
+      resultats.innerHTML = destinations
+        .map(
+          (destination) => `
+            <article>
+              <h3 class="destination-titre" data-id="${destination.id}">
+                ${destination.title.rendered}
+              </h3>
+              <div class="description" id="description-${destination.id}" style="max-height: 0; overflow: hidden; transition: max-height 0.3s ease;">
+                ${destination.content.rendered}
+              </div>
+            </article>`
+        )
+        .join("");
+
+      // Active les fonctionnalités de l'accordéon
+      activerAccordeon();
+    } catch (error) {
+      console.error("Erreur lors du chargement des destinations :", error);
+      resultats.innerHTML = `<p>Une erreur est survenue lors du chargement des destinations.</p>`;
+    }
+  }
+
+  // Fonction pour activer l'accordéon
+  function activerAccordeon() {
+    const titres = document.querySelectorAll(".destination-titre");
+    titres.forEach((titre) => {
+      titre.addEventListener("click", () => {
+        const id = titre.dataset.id;
+        const description = document.querySelector(`#description-${id}`);
+        const descriptions = document.querySelectorAll(".description");
+
+        // Ferme les autres descriptions
+        descriptions.forEach((desc) => {
+          if (desc !== description) {
+            desc.style.maxHeight = "0";
+            desc.classList.remove("description--visible");
+          }
+        });
+
+        // Bascule l'état de la description sélectionnée
+        if (description.classList.contains("description--visible")) {
+          description.style.maxHeight = "0";
+          description.classList.remove("description--visible");
+        } else {
+          description.style.maxHeight = description.scrollHeight + "px";
+          description.classList.add("description--visible");
+        }
+      });
+    });
+  }
+
+  // Ajoute un événement à chaque bouton
+  document.querySelectorAll(".pays-button").forEach((button) => {
+    button.addEventListener("click", () => {
+      const pays = button.dataset.pays;
+      chargerDestinations(pays);
     });
   });
 });
